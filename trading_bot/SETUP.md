@@ -10,26 +10,51 @@
 
 Ouvre `config.py` et remplace :
 ```python
-TELEGRAM_TOKEN  = "7123456789:AAFxxx..."   # ton token BotFather
+TELEGRAM_TOKEN   = "7123456789:AAFxxx..."   # ton token BotFather
 TELEGRAM_CHAT_ID = "123456789"              # ton chat_id
 ```
 
-Tu peux aussi modifier la liste des actifs à surveiller dans `STOCKS` et `CRYPTO`.
+Tu peux aussi modifier les listes `STOCKS` et `CRYPTO`.
 
-## 3. Installe les dépendances
+## 3. Lance le bot
 
+### Option A — Sur ton PC/Mac (simple)
 ```bash
 cd trading_bot
 pip install -r requirements.txt
-```
-
-## 4. Lance le bot
-
-```bash
 python main.py
 ```
+> Le bot s'arrête si tu fermes le terminal.
 
-Tu recevras un message Telegram de confirmation, puis des alertes automatiques.
+### Option B — Docker (recommandé, tourne en arrière-plan)
+```bash
+cd trading_bot
+docker build -t trading-bot .
+docker run -d --name trading-bot --restart unless-stopped trading-bot
+```
+> Tourne en continu, redémarre automatiquement si ton PC reboot.
+
+### Option C — Cloud gratuit (tourne 24/7 sans PC allumé)
+Déploie sur **Railway.app** (gratuit) :
+1. Crée un compte sur railway.app
+2. "New Project" → "Deploy from GitHub repo"
+3. Sélectionne ce repo → Railway détecte le Dockerfile automatiquement
+4. Ajoute les variables d'environnement `TELEGRAM_TOKEN` et `TELEGRAM_CHAT_ID`
+
+---
+
+## Commandes depuis ton téléphone
+
+Une fois le bot lancé, ouvre Telegram et tape dans la conversation avec ton bot :
+
+| Commande | Action |
+|---|---|
+| `/start` | Affiche l'aide |
+| `/scan` | Force un scan immédiat |
+| `/status` | État du bot, dernier scan, nb de signaux |
+| `/pause` | Met en pause les scans automatiques |
+| `/resume` | Reprend les scans automatiques |
+| `/watchlist` | Liste des actifs surveillés |
 
 ---
 

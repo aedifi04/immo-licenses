@@ -1,20 +1,22 @@
-import requests
+from telegram import Bot
 from signal_engine import Signal
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
 EMOJI = {"ACHAT": "🟢", "VENTE": "🔴"}
 STRENGTH_LABEL = {1: "faible", 2: "moyen", 3: "fort"}
 
+_bot: Bot | None = None
 
-def send_telegram(message: str) -> bool:
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
-    try:
-        r = requests.post(url, json=payload, timeout=10)
-        return r.status_code == 200
-    except Exception as e:
-        print(f"[telegram] Erreur envoi: {e}")
-        return False
+
+def get_bot() -> Bot:
+    global _bot
+    if _bot is None:
+        _bot = Bot(token=TELEGRAM_TOKEN)
+    return _bot
+
+
+async def send_message(text: str) -> None:
+    await get_bot().send_message(chat_id=TELEGRAM_CHAT_ID, text=text, parse_mode="HTML")
 
 
 def format_signal(signal: Signal) -> str:
@@ -30,13 +32,10 @@ def format_signal(signal: Signal) -> str:
         f"RSI  : {signal.rsi:.1f}\n"
         f"Force du signal : {strength} ({signal.strength}/3)\n"
         f"\nRaisons :\n{reasons_str}\n"
-        f"\n⚠️ <i>Ceci est une alerte informative, pas un conseil financier.\n"
-        f"Exécute manuellement sur Revolut.</i>"
+        f"\n⚠️ <i>Alerte informative — exécute manuellement sur Revolut.</i>"
     )
 
 
-def send_signal(signal: Signal) -> None:
-    message = format_signal(signal)
-    ok = send_telegram(message)
-    status = "envoyée" if ok else "ECHEC"
-    print(f"[alert] {signal.asset} {signal.action} → Telegram {status}")
+async def send_signal(signal: Signal) -> None:
+    await send_message(format_signal(signal))
+    print(f"[alert] {signal.asset} {signal.action} → Telegram OK")
