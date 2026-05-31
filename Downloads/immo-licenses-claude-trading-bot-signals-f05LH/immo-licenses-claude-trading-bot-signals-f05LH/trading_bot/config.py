@@ -1,8 +1,13 @@
-# ─── WhatsApp (CallMeBot) ─────────────────────────────────────────────────────
-WHATSAPP_PHONE  = "+33612345678"   # ton numéro avec indicatif (ex: +33612345678)
-CALLMEBOT_APIKEY = "TON_APIKEY"   # reçu par WhatsApp depuis CallMeBot
+# ─── Mode ─────────────────────────────────────────────────────────────────────
+# "pc"    → interface desktop uniquement, pas de WhatsApp
+# "phone" → alertes WhatsApp + interface mobile
+MODE = "pc"
 
-# ─── Interface web (contrôle depuis ton téléphone) ───────────────────────────
+# ─── WhatsApp (CallMeBot) — uniquement si MODE = "phone" ──────────────────────
+WHATSAPP_PHONE   = "+33612345678"
+CALLMEBOT_APIKEY = "TON_APIKEY"
+
+# ─── Interface web ────────────────────────────────────────────────────────────
 WEB_PORT = 5000
 
 # ─── Assets à surveiller ─────────────────────────────────────────────────────
