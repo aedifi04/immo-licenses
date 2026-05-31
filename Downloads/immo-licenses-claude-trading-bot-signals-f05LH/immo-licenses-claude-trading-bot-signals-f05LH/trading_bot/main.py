@@ -29,6 +29,8 @@ state: BotState = {
     "signal_history": [],
 }
 
+_scan_lock = threading.Lock()
+
 
 def log(msg: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
@@ -42,6 +44,16 @@ def log(msg: str) -> None:
 # ─── Scan principal ───────────────────────────────────────────────────────────
 
 def run_scan(triggered_by: str = "auto") -> int:
+    if not _scan_lock.acquire(blocking=False):
+        log("Scan ignoré — un scan est déjà en cours.")
+        return 0
+    try:
+        return _do_scan(triggered_by)
+    finally:
+        _scan_lock.release()
+
+
+def _do_scan(triggered_by: str) -> int:
     now = datetime.now()
     state["last_scan"] = now
     found = 0
