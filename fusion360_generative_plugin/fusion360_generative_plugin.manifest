@@ -1,0 +1,11 @@
+{
+  "autodeskProduct": "FUSION",
+  "type": "addin",
+  "id": "GenerativeAndContouring",
+  "author": "",
+  "description": {
+    "": "Generative Design & Pieds Contour Base pour Fusion 360"
+  },
+  "version": "1.0.0",
+  "runOnStartup": false
+}
