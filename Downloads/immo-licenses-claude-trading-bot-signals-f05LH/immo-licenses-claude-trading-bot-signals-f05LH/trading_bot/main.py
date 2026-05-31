@@ -4,6 +4,8 @@ import time
 from datetime import datetime
 import pandas as pd
 from typing import Any, TypedDict
+from dotenv import load_dotenv
+load_dotenv()  # charge .env avant tout autre import
 from flask import Flask, Response, jsonify, render_template_string
 
 from config import STOCKS, CRYPTO, CRYPTO_BINANCE, CHECK_INTERVAL_MINUTES, WEB_PORT
