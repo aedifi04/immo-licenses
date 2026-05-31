@@ -1,28 +1,9 @@
-import time
 import yfinance as yf
 import requests
 import pandas as pd
-from config import STOCK_INTERVAL, STOCK_PERIOD
+from config import STOCK_INTERVAL, STOCK_PERIOD, CRYPTO_BINANCE, CRYPTO_INTERVAL, CRYPTO_LIMIT
 
-# Délai entre appels CoinGecko pour rester sous la limite gratuite (30 req/min)
-_COINGECKO_DELAY = 2.0
-_last_cg_call: float = 0.0
-
-
-def _coingecko_get(url: str, params: dict) -> requests.Response:
-    global _last_cg_call
-    elapsed = time.time() - _last_cg_call
-    if elapsed < _COINGECKO_DELAY:
-        time.sleep(_COINGECKO_DELAY - elapsed)
-    r = requests.get(url, params=params, timeout=15)
-    _last_cg_call = time.time()
-    if r.status_code == 429:
-        # Rate limit — attend 30s et réessaie une fois
-        print("[crypto] Rate limit CoinGecko, attente 30s…")
-        time.sleep(30)
-        r = requests.get(url, params=params, timeout=15)
-        _last_cg_call = time.time()
-    return r
+BINANCE = "https://api.binance.com/api/v3"
 
 
 def fetch_stock(ticker: str) -> pd.DataFrame | None:
@@ -40,22 +21,50 @@ def fetch_stock(ticker: str) -> pd.DataFrame | None:
         return None
 
 
-def fetch_crypto(coin_id: str, days: int = 90) -> pd.DataFrame | None:
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {"vs_currency": "eur", "days": days, "interval": "daily"}
+def fetch_crypto(coin_id: str) -> pd.DataFrame | None:
+    symbol = CRYPTO_BINANCE.get(coin_id)
+    if not symbol:
+        return None
     try:
-        r = _coingecko_get(url, params)
+        r = requests.get(f"{BINANCE}/klines",
+                         params={"symbol": symbol, "interval": CRYPTO_INTERVAL,
+                                 "limit": CRYPTO_LIMIT},
+                         timeout=10)
         r.raise_for_status()
-        data = r.json()
-        prices = data.get("prices", [])
-        volumes = data.get("total_volumes", [])
-        if len(prices) < 30:
-            return None
-        df = pd.DataFrame(prices, columns=["ts", "close"])
-        df["volume"] = [v[1] for v in volumes]
+        cols = ["ts","open","high","low","close","volume",
+                "ct","qv","n","tbb","tbq","ignore"]
+        df = pd.DataFrame(r.json(), columns=cols)
         df["ts"] = pd.to_datetime(df["ts"], unit="ms")
         df.set_index("ts", inplace=True)
-        return df
+        return df[["open","high","low","close","volume"]].astype(float)
     except Exception as e:
         print(f"[crypto] Erreur {coin_id}: {e}")
+        return None
+
+
+def fetch_live_price_crypto(coin_id: str) -> tuple[float, float] | None:
+    """Retourne (prix, variation_24h_pct)."""
+    symbol = CRYPTO_BINANCE.get(coin_id)
+    if not symbol:
+        return None
+    try:
+        r = requests.get(f"{BINANCE}/ticker/24hr",
+                         params={"symbol": symbol}, timeout=5)
+        r.raise_for_status()
+        d = r.json()
+        return float(d["lastPrice"]), float(d["priceChangePercent"])
+    except Exception:
+        return None
+
+
+def fetch_live_price_stock(ticker: str) -> tuple[float, float] | None:
+    """Retourne (prix, variation_24h_pct)."""
+    try:
+        t = yf.Ticker(ticker)
+        info = t.fast_info
+        price = float(info.last_price)
+        prev  = float(info.previous_close)
+        pct   = (price - prev) / prev * 100 if prev else 0.0
+        return price, pct
+    except Exception:
         return None

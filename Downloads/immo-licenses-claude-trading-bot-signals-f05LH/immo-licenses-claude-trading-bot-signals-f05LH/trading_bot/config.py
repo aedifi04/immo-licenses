@@ -1,9 +1,7 @@
 # ─── Mode ─────────────────────────────────────────────────────────────────────
-# "pc"    → interface desktop uniquement, pas de WhatsApp
-# "phone" → alertes WhatsApp + interface mobile
-MODE = "pc"
+MODE = "pc"   # "pc" = interface seule | "phone" = WhatsApp + interface
 
-# ─── WhatsApp (CallMeBot) — uniquement si MODE = "phone" ──────────────────────
+# ─── WhatsApp (si MODE = "phone") ─────────────────────────────────────────────
 WHATSAPP_PHONE   = "+33612345678"
 CALLMEBOT_APIKEY = "TON_APIKEY"
 
@@ -11,38 +9,37 @@ CALLMEBOT_APIKEY = "TON_APIKEY"
 WEB_PORT = 5000
 
 # ─── Assets à surveiller ─────────────────────────────────────────────────────
-STOCKS = [
-    "AAPL",   # Apple
-    "NVDA",   # Nvidia
-    "TSLA",   # Tesla
-    "MSFT",   # Microsoft
-    "AMZN",   # Amazon
-]
+STOCKS = ["AAPL", "NVDA", "TSLA", "MSFT", "AMZN"]
 
-CRYPTO = [
-    "bitcoin",
-    "ethereum",
-    "solana",
-    "ripple",
-]
+CRYPTO = ["bitcoin", "ethereum", "solana", "ripple"]
 
-# ─── Paramètres des indicateurs ───────────────────────────────────────────────
-RSI_PERIOD = 14
-RSI_OVERSOLD = 30       # signal ACHAT si RSI < 30
-RSI_OVERBOUGHT = 70     # signal VENTE si RSI > 70
+# Correspondance nom → symbole Binance (USDT)
+CRYPTO_BINANCE: dict[str, str] = {
+    "bitcoin":  "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "solana":   "SOLUSDT",
+    "ripple":   "XRPUSDT",
+}
 
-MACD_FAST = 12
-MACD_SLOW = 26
+# ─── Indicateurs ──────────────────────────────────────────────────────────────
+RSI_PERIOD     = 14
+RSI_OVERSOLD   = 38    # < 30 était trop rare → plus de signaux
+RSI_OVERBOUGHT = 62
+
+MACD_FAST   = 12
+MACD_SLOW   = 26
 MACD_SIGNAL = 9
 
 EMA_SHORT = 9
-EMA_LONG = 21
+EMA_LONG  = 21
 
-# ─── Intervalle de vérification (minutes) ─────────────────────────────────────
-CHECK_INTERVAL_MINUTES = 15
+MOMENTUM_PERIODS   = 3    # variation sur les 3 dernières bougies
+MOMENTUM_THRESHOLD = 0.8  # % de variation pour déclencher le signal
 
-# ─── Timeframe Yahoo Finance ──────────────────────────────────────────────────
-# "1d" = données journalières (recommandé pour débuter)
-# "1h" = données horaires (plus de signaux, plus de bruit)
-STOCK_INTERVAL = "1d"
-STOCK_PERIOD = "3mo"   # 3 mois d'historique
+# ─── Timeframe ─────────────────────────────────────────────────────────────────
+# 1h = signaux intraday, réactifs aux mouvements de 30-60 min
+CHECK_INTERVAL_MINUTES = 30
+STOCK_INTERVAL = "1h"
+STOCK_PERIOD   = "7d"
+CRYPTO_INTERVAL = "1h"
+CRYPTO_LIMIT    = 100   # 100 dernières bougies 1h
