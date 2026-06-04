@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FabBilling — Facturation Fabrication</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="app-header">
+    <div class="header-left">
+      <span class="logo">⚙</span>
+      <span class="app-name">FabBilling</span>
+      <span class="doc-badge" id="docBadge">DEVIS</span>
+      <span class="doc-number" id="docNumber"></span>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-ghost" onclick="App.newProject()">Nouveau</button>
+      <button class="btn btn-ghost" onclick="App.loadFromStorage()">Charger</button>
+      <button class="btn btn-ghost" onclick="App.saveToStorage()">Sauvegarder</button>
+      <button class="btn btn-ghost" onclick="App.exportJSON()">⬇ JSON</button>
+      <button class="btn btn-primary" onclick="App.printDocument()">📄 Générer PDF</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" id="tab-btn-info" onclick="App.switchTab('info')">📋 Informations</button>
+    <button class="tab" id="tab-btn-items" onclick="App.switchTab('items')">🔧 Prestations</button>
+    <button class="tab" id="tab-btn-summary" onclick="App.switchTab('summary')">💰 Récapitulatif</button>
+    <button class="tab" id="tab-btn-settings" onclick="App.switchTab('settings')">⚙ Paramètres</button>
+  </nav>
+
+  <!-- Tab: Informations -->
+  <section class="tab-content active" id="tab-info">
+    <div class="two-col">
+      <div class="card">
+        <h2 class="card-title">Document</h2>
+        <div class="form-row">
+          <label>Type</label>
+          <select id="docType" onchange="App.onDocTypeChange()">
+            <option value="devis">Devis</option>
+            <option value="facture">Facture</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Numéro</label>
+          <input type="text" id="docNum" placeholder="DEV-2024-001" oninput="App.updateDocBadge()">
+        </div>
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="docDate">
+        </div>
+        <div class="form-row" id="row-validUntil">
+          <label>Valide jusqu'au</label>
+          <input type="date" id="docValidUntil">
+        </div>
+        <div class="form-row" id="row-dueDate" style="display:none">
+          <label>Échéance paiement</label>
+          <input type="date" id="docDueDate">
+        </div>
+        <div class="form-row">
+          <label>Réf. projet</label>
+          <input type="text" id="docProject" placeholder="Nom ou référence du projet">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Client</h2>
+        <div class="form-row">
+          <label>Entreprise</label>
+          <input type="text" id="clientCompany" placeholder="Société (optionnel)">
+        </div>
+        <div class="form-row">
+          <label>Nom</label>
+          <input type="text" id="clientName" placeholder="Jean Dupont">
+        </div>
+        <div class="form-row">
+          <label>Adresse</label>
+          <textarea id="clientAddress" rows="3" placeholder="12 rue de la Forge&#10;75001 Paris"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" id="clientEmail" placeholder="client@example.com">
+        </div>
+        <div class="form-row">
+          <label>Téléphone</label>
+          <input type="tel" id="clientPhone" placeholder="+33 6 00 00 00 00">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab: Prestations -->
+  <section class="tab-content" id="tab-items">
+    <div class="items-header">
+      <h2>Prestations</h2>
+      <div class="add-buttons">
+        <button class="btn btn-cat cat-cad" onclick="App.openItemModal('cad')">+ CAD / Modélisation</button>
+        <button class="btn btn-cat cat-print" onclick="App.openItemModal('print3d_plastic')">+ Impression 3D Plastique</button>
+        <button class="btn btn-cat cat-metal" onclick="App.openItemModal('print3d_metal')">+ Impression 3D Métal</button>
+        <button class="btn btn-cat cat-laser" onclick="App.openItemModal('laser')">+ Découpe Laser</button>
+        <button class="btn btn-cat cat-machining" onclick="App.openItemModal('machining')">+ Usinage / CNC</button>
+        <button class="btn btn-cat cat-welding" onclick="App.openItemModal('welding')">+ Soudage</button>
+        <button class="btn btn-cat cat-scan" onclick="App.openItemModal('scan3d')">+ Scan 3D</button>
+        <button class="btn btn-cat cat-other" onclick="App.openItemModal('other')">+ Autre / Forfait</button>
+      </div>
+    </div>
+    <div id="items-list"></div>
+    <div class="items-empty" id="items-empty">
+      <p>Aucune prestation. Cliquez sur un bouton ci-dessus pour commencer.</p>
+    </div>
+  </section>
+
+  <!-- Tab: Récapitulatif -->
+  <section class="tab-content" id="tab-summary">
+    <div class="two-col">
+      <div class="card">
+        <h2 class="card-title">Détail par catégorie</h2>
+        <div id="summary-by-cat"></div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Totaux</h2>
+        <div id="summary-totals"></div>
+        <div class="form-row" style="margin-top:20px">
+          <label>Remise (%)</label>
+          <input type="number" id="discount" min="0" max="100" step="0.5" value="0" oninput="App.updateSummary()">
+        </div>
+        <div class="form-row">
+          <label>TVA (%)</label>
+          <input type="number" id="tvaRate" min="0" max="30" step="0.5" value="20" oninput="App.updateSummary()">
+        </div>
+        <div class="form-row" style="margin-top:20px">
+          <label>Notes / Conditions</label>
+          <textarea id="docNotes" rows="5" placeholder="Conditions de paiement, garanties, délais...&#10;&#10;Ex: Paiement à 30 jours. Acompte de 30% à la commande."></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab: Paramètres -->
+  <section class="tab-content" id="tab-settings">
+    <div class="two-col">
+      <div class="card">
+        <h2 class="card-title">Mon entreprise</h2>
+        <div class="form-row">
+          <label>Nom / Raison sociale</label>
+          <input type="text" id="s-companyName" placeholder="Mon Atelier 3D">
+        </div>
+        <div class="form-row">
+          <label>Adresse</label>
+          <textarea id="s-companyAddress" rows="3" placeholder="12 rue de l'Atelier&#10;75001 Paris"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" id="s-companyEmail">
+        </div>
+        <div class="form-row">
+          <label>Téléphone</label>
+          <input type="tel" id="s-companyPhone">
+        </div>
+        <div class="form-row">
+          <label>SIRET</label>
+          <input type="text" id="s-companySiret" placeholder="000 000 000 00000">
+        </div>
+        <div class="form-row">
+          <label>N° TVA intracom.</label>
+          <input type="text" id="s-companyTvaNum" placeholder="FR00 000000000">
+        </div>
+        <div class="form-row">
+          <label>Conditions paiement</label>
+          <input type="text" id="s-paymentTerms" placeholder="Paiement à 30 jours.">
+        </div>
+        <button class="btn btn-primary" onclick="App.saveSettings()" style="margin-top:16px">Sauvegarder les paramètres</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Tarifs par défaut</h2>
+        <h3 class="subsection-title">Taux horaires</h3>
+        <div class="form-row">
+          <label>CAD / Modélisation (€/h)</label>
+          <input type="number" id="s-rateCAD" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Usinage CNC (€/h)</label>
+          <input type="number" id="s-rateMachining" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Soudage (€/h)</label>
+          <input type="number" id="s-rateWelding" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Découpe laser (€/h)</label>
+          <input type="number" id="s-rateLaser" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Scan 3D (€/h)</label>
+          <input type="number" id="s-rateScan" step="1" min="0">
+        </div>
+        <h3 class="subsection-title">Impression 3D</h3>
+        <div class="form-row">
+          <label>Filament plastique (€/kg)</label>
+          <input type="number" id="s-filamentPrice" step="0.5" min="0">
+        </div>
+        <div class="form-row">
+          <label>Résine (€/L)</label>
+          <input type="number" id="s-resinPrice" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Poudre métal (€/kg)</label>
+          <input type="number" id="s-metalPowderPrice" step="1" min="0">
+        </div>
+        <div class="form-row">
+          <label>Prix électricité (€/kWh)</label>
+          <input type="number" id="s-electricityPrice" step="0.01" min="0">
+        </div>
+        <div class="form-row">
+          <label>Puissance FDM (W)</label>
+          <input type="number" id="s-fdmPowerW" step="10" min="0">
+        </div>
+        <div class="form-row">
+          <label>Puissance imprimante métal (W)</label>
+          <input type="number" id="s-metalPowerW" step="100" min="0">
+        </div>
+        <button class="btn btn-primary" onclick="App.saveSettings()" style="margin-top:16px">Sauvegarder les paramètres</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Modal: Item Editor -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="App.closeModalOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Ajouter une prestation</h3>
+      <button class="btn-close" onclick="App.closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <div class="item-cost-preview" id="item-cost-preview">Coût : 0,00 €</div>
+      <button class="btn btn-ghost" onclick="App.closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="App.saveItem()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print document (hidden, shown only on print) -->
+<div id="print-document"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
